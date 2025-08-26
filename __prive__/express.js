@@ -50,7 +50,7 @@ app.get('/api/pokemon', async (req, res) => {
 
         if (generation) {
             query += ' AND generation = ?';
-            params.push(generation);
+            params.push(parseInt(generation));
         }
 
         if (legendary !== undefined) {
@@ -63,9 +63,12 @@ app.get('/api/pokemon', async (req, res) => {
             params.push(`%${search}%`);
         }
 
-        // Paginatie
+        // Paginatie - zorg voor geldige integers
+        const limitInt = Math.max(1, Math.min(2000, parseInt(limit) || 1500));
+        const offsetInt = Math.max(0, parseInt(offset) || 0);
+
         query += ' ORDER BY pokedex_number LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
+        params.push(limitInt, offsetInt);
 
         const [rows] = await pool.execute(query, params);
 
@@ -214,11 +217,15 @@ app.get('/api/pokemon/random', async (req, res) => {
 app.get('/api/pokemon/type/:type', async (req, res) => {
     try {
         const { type } = req.params;
-        const { limit = 50, offset = 0 } = req.query;
+        const { limit = 1500, offset = 0 } = req.query;
+
+        // Zorg voor geldige integers
+        const limitInt = Math.max(1, Math.min(2000, parseInt(limit) || 1500));
+        const offsetInt = Math.max(0, parseInt(offset) || 0);
 
         const [rows] = await pool.execute(
             'SELECT * FROM pokemon WHERE type1 = ? OR type2 = ? ORDER BY pokedex_number LIMIT ? OFFSET ?',
-            [type, type, parseInt(limit), parseInt(offset)]
+            [type, type, limitInt, offsetInt]
         );
 
         res.json({
