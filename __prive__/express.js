@@ -12,10 +12,14 @@ app.use(express.static('public'));
 
 // Database connection configuratie
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: '', // Pas aan naar jouw MySQL password
-    database: 'pokedex'
+    host: "5.253.247.243",
+    port: 5643,
+    user: "mysql",
+    password: "5b65qdYB8SfQLXRtpdB7d6nWdGmZcAD9VbLAdwVVbzfVisxbr0H68MuUsODAYzbT",
+    database: "default",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
 // Database connection pool

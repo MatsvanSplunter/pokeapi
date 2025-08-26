@@ -43,12 +43,27 @@ function calculateTypeEffectiveness(types) {
 
 // 🔹 Main
 async function main() {
-  const db = await mysql.createPool({
-    host: "localhost",
-    user: "bit_academy",
-    password: "bit_academy",
-    database: "pokedex"
+  const db = mysql.createPool({
+    host: "5.253.247.243",
+    port: 5643,
+    user: "mysql",
+    password: "5b65qdYB8SfQLXRtpdB7d6nWdGmZcAD9VbLAdwVVbzfVisxbr0H68MuUsODAYzbT",
+    database: "default",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
   });
+
+  // Test database connectie eerst
+  try {
+    console.log("🔗 Testing database connection...");
+    const connection = await db.getConnection();
+    console.log("✅ Database connection successful!");
+    connection.release();
+  } catch (error) {
+    console.error("❌ Database connection failed:", error.message);
+    return;
+  }
 
   // Vind het aantal Pokémon van PokeAPI (1010+ in de nieuwste versies)
   const totalPokemonRes = await axios.get('https://pokeapi.co/api/v2/pokemon-species/?limit=1');
@@ -112,7 +127,7 @@ async function main() {
         s.capture_rate,
         s.hatch_counter ? (s.hatch_counter * 255) : null,
         abilities,
-        s.growth_rate?.name,
+        p.growth_rate,
         s.base_happiness,
         multipliers.against_normal, multipliers.against_fire, multipliers.against_water, multipliers.against_electric, multipliers.against_grass, multipliers.against_ice, multipliers.against_fighting, multipliers.against_poison, multipliers.against_ground, multipliers.against_flying, multipliers.against_psychic, multipliers.against_bug, multipliers.against_rock, multipliers.against_ghost, multipliers.against_dragon, multipliers.against_dark, multipliers.against_steel, multipliers.against_fairy,
         hp, attack, defense, spAttack, spDefense, speed,
