@@ -63,14 +63,18 @@ app.get('/api/pokemon', async (req, res) => {
             params.push(`%${search}%`);
         }
 
-        // Paginatie - zorg voor geldige integers
+        // Paginatie - gebruik string interpolation voor LIMIT/OFFSET
         const limitInt = Math.max(1, Math.min(2000, parseInt(limit) || 1500));
         const offsetInt = Math.max(0, parseInt(offset) || 0);
 
-        query += ' ORDER BY pokedex_number LIMIT ? OFFSET ?';
-        params.push(limitInt, offsetInt);
+        query += ` ORDER BY pokedex_number LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
-        const [rows] = await pool.execute(query, params);
+        let rows;
+        if (params.length > 0) {
+            [rows] = await pool.execute(query, params);
+        } else {
+            [rows] = await pool.query(query);
+        }
 
         res.json({
             success: true,
@@ -81,12 +85,10 @@ app.get('/api/pokemon', async (req, res) => {
         console.error('Error fetching pokemon:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching pokemon data'
+            message: 'Error fetching pokemon datas 234'
         });
     }
-});
-
-// GET /api/pokemon/:id - Specifieke Pokémon ophalen
+});// GET /api/pokemon/:id - Specifieke Pokémon ophalen
 app.get('/api/pokemon/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -111,7 +113,7 @@ app.get('/api/pokemon/:id', async (req, res) => {
         console.error('Error fetching pokemon:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching pokemon data'
+            message: 'Error fetching pokemon datas'
         });
     }
 });
@@ -142,7 +144,7 @@ app.get('/api/pokemon/name/:name', async (req, res) => {
         console.error('Error fetching pokemon:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching pokemon data'
+            message: 'Error fetching pokemon data4'
         });
     }
 });
@@ -224,8 +226,8 @@ app.get('/api/pokemon/type/:type', async (req, res) => {
         const offsetInt = Math.max(0, parseInt(offset) || 0);
 
         const [rows] = await pool.execute(
-            'SELECT * FROM pokemon WHERE type1 = ? OR type2 = ? ORDER BY pokedex_number LIMIT ? OFFSET ?',
-            [type, type, limitInt, offsetInt]
+            `SELECT * FROM pokemon WHERE type1 = ? OR type2 = ? ORDER BY pokedex_number LIMIT ${limitInt} OFFSET ${offsetInt}`,
+            [type, type]
         );
 
         res.json({
