@@ -1,0 +1,20 @@
+{
+  "name": "pokemon-api",
+  "version": "1.0.0",
+  "description": "Pokémon API met Express.js en MySQL",
+  "main": "__prive__/express.js",
+  "scripts": {
+    "start": "node __prive__/express.js",
+    "dev": "nodemon __prive__/express.js"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.3"
+  },
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
