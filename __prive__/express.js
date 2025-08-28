@@ -19,7 +19,10 @@ const dbConfig = {
     database: "default",
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    acquireTimeout: 5000,
+    timeout: 5000,
+    reconnect: true
 };
 
 // Database connection pool
@@ -38,6 +41,38 @@ function getTypeId(typeName) {
 }
 
 // Routes
+
+// Test endpoint without database
+app.get('/test', (req, res) => {
+    console.log('✅ Test endpoint called');
+    res.json({
+        success: true,
+        message: 'Server is working!',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Test types structure endpoint
+app.get('/api/test-types', (req, res) => {
+    console.log('✅ Test types endpoint called');
+
+    const mockPokemon = {
+        id: 1,
+        name: 'bulbasaur',
+        url: `http://${req.get('host')}/api/pokemon/1/`,
+        types: [
+            { slot: 1, type: { name: 'grass', url: `https://pokeapi.co/api/v2/type/${getTypeId('grass')}/` } },
+            { slot: 2, type: { name: 'poison', url: `https://pokeapi.co/api/v2/type/${getTypeId('poison')}/` } }
+        ],
+        sprite_official_artwork: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png'
+    };
+
+    res.json({
+        success: true,
+        message: 'Types structure test',
+        result: mockPokemon
+    });
+});
 
 // GET /api/pokemon - Alle Pokémon ophalen met optionele filtering
 app.get('/api/pokemon', async (req, res) => {
@@ -91,10 +126,19 @@ app.get('/api/pokemon', async (req, res) => {
         res.json({
             success: true,
             count: rows.length,
-            results: rows.map((row) => ({
-                url: `https://${req.host}/api/pokemon/${row.id}/`,
-                ...row
-            }))
+            results: rows.map((row) => {
+                console.log('DEBUG: Processing row for', row.name, 'with types:', row.type1, row.type2);
+                return {
+                    id: row.id,
+                    name: row.name,
+                    url: `https://${req.host}/api/pokemon/${row.id}/`,
+                    types: [
+                        { slot: 1, type: { name: row.type1, url: `https://pokeapi.co/api/v2/type/${getTypeId(row.type1)}/` } },
+                        ...(row.type2 ? [{ slot: 2, type: { name: row.type2, url: `https://pokeapi.co/api/v2/type/${getTypeId(row.type2)}/` } }] : [])
+                    ],
+                    sprite_official_artwork: row.sprite_official_artwork
+                };
+            })
         });
     } catch (error) {
         console.error('Error fetching pokemon:', error);
@@ -331,8 +375,10 @@ app.get('/api/pokemon/type/:type', async (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
+    console.log('Root endpoint hit');
     res.json({
         message: 'Pokémon API is running!',
+        server_time: new Date().toISOString(),
         endpoints: {
             'GET /api/pokemon': 'Get all pokemon with optional filters',
             'GET /api/pokemon/:id': 'Get pokemon by pokedex number',
@@ -342,6 +388,19 @@ app.get('/', (req, res) => {
             'GET /api/types': 'Get all available types',
             'GET /api/stats': 'Get pokedex statistics'
         }
+    });
+});
+
+// Test endpoint voor debugging
+app.get('/test', (req, res) => {
+    console.log('Test endpoint hit');
+    res.json({
+        message: 'Test endpoint werkt!',
+        timestamp: new Date().toISOString(),
+        types_test: [
+            { slot: 1, type: { name: "grass", url: `https://pokeapi.co/api/v2/type/${getTypeId("grass")}/` } },
+            { slot: 2, type: { name: "poison", url: `https://pokeapi.co/api/v2/type/${getTypeId("poison")}/` } }
+        ]
     });
 });
 
@@ -363,9 +422,10 @@ app.use((req, res) => {
 });
 
 // Server starten
-app.listen(PORT, () => {
-    console.log(`🚀 Pokémon API server is running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Pokémon API server is running on http://0.0.0.0:${PORT}`);
     console.log(`📖 API documentation available at http://localhost:${PORT}`);
+    console.log(`🔗 Test with: curl http://localhost:${PORT}/api/pokemon?limit=2`);
 });
 
 module.exports = app;
