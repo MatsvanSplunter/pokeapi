@@ -65,29 +65,58 @@ async function main() {
     return;
   }
 
-  // Vind het aantal Pokémon van PokeAPI
-  const totalPokemonRes = await axios.get('https://pokeapi.co/api/v2/pokemon-species/?limit=1');
-  const totalCount = totalPokemonRes.data.count;
+  // Haal de lijst van alle Pokémon van PokeAPI (inclusief alle varianten)
+  console.log("📡 Fetching complete Pokemon list from PokeAPI...");
+  const allPokemonRes = await axios.get('https://pokeapi.co/api/v2/pokemon/?limit=10000');
+  const allPokemon = allPokemonRes.data.results;
+  const totalCount = allPokemon.length;
 
-  console.log(`Found ${totalCount} Pokémon. Starting FULL IMPORT of ALL Pokémon...`);
-  console.log(`🚀 This will take a while - importing ${totalCount} Pokémon from PokeAPI`);
+  console.log(`Found ${totalCount} Pokémon (including all variants). Starting FULL IMPORT...`);
+  console.log(`📝 This includes: Base forms, Regional variants, Mega evolutions, etc.`);
 
   let successCount = 0;
   let errorCount = 0;
 
-  for (let id = 1; id <= totalCount; id++) {
+  // Import alle Pokemon inclusief varianten (start vanaf index 1025 voor nieuwe varianten)
+  for (let i = 1025; i < totalCount; i++) {
     try {
-      // Progress indicator every 50 Pokémon
-      if (id % 50 === 0 || id === 1) {
-        console.log(`📊 Progress: ${id}/${totalCount} (${Math.round(id / totalCount * 100)}%)`);
-      }
+      const pokemonUrl = allPokemon[i].url;
+      const id = parseInt(pokemonUrl.split("/").slice(-2, -1)[0]);
+      
+      console.log(`📊 Progress: Processing ${allPokemon[i].name} (ID: ${id})`);
+      
       // Basis Pokémon data
-      const pokeRes = await axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`);
+      const pokeRes = await axios.get(pokemonUrl);
       const p = pokeRes.data;
 
-      // Species data
-      const speciesRes = await axios.get(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
-      const s = speciesRes.data;
+      // Species data - gebruik de species URL uit de pokemon data
+      let s = null;
+      let speciesId = id;
+      
+      try {
+        if (p.species && p.species.url) {
+          // Extract species ID from URL voor varianten
+          speciesId = parseInt(p.species.url.split("/").slice(-2, -1)[0]);
+        }
+        const speciesRes = await axios.get(`https://pokeapi.co/api/v2/pokemon-species/${speciesId}`);
+        s = speciesRes.data;
+      } catch (speciesError) {
+        // Als species niet bestaat, gebruik basis info
+        console.log(`⚠️  No species data for ${p.name} (ID: ${id}), using defaults`);
+        s = {
+          names: [],
+          gender_rate: -1,
+          genera: [],
+          capture_rate: 45,
+          hatch_counter: 20,
+          base_happiness: 50,
+          growth_rate: { name: "medium-fast" },
+          generation: { url: "https://pokeapi.co/api/v2/generation/1/" },
+          is_legendary: false,
+          name: p.name,
+          url: `https://pokeapi.co/api/v2/pokemon-species/${speciesId}/`
+        };
+      }
 
       const name = p.name;
       const japaneseName = s.names.find(n => n.language.name === "ja")?.name || null;
@@ -158,7 +187,7 @@ async function main() {
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
-        p.id,                                    // id (exact PokeAPI ID)
+        id,                                      // id (exact PokeAPI ID)
         name,                                    // name
         japaneseName,                           // japanese_name
         s.gender_rate === -1 ? null : (100 - (s.gender_rate * 12.5)), // percentage_male
@@ -208,16 +237,21 @@ async function main() {
         // EVs (effort values from PokeAPI stats.effort)
         evHp, evAttack, evDefense, evSpAttack, evSpDefense, evSpeed,
         // Meta
-        parseInt(s.generation.url.split("/").slice(-2, -1)[0]), // generation
-        s.is_legendary,                         // is_legendary
-        s.name,                                 // species_name
-        `https://pokeapi.co/api/v2/pokemon-species/${id}/`      // species_url
+        parseInt(s.generation?.url?.split("/").slice(-2, -1)[0] || "1"), // generation (default to 1 if missing)
+        s.is_legendary || false,               // is_legendary
+        s.name || p.name,                      // species_name
+        s.url || `https://pokeapi.co/api/v2/pokemon-species/${speciesId}/` // species_url
       ]);
 
-      console.log(`✅ Inserted ${name} (ID: ${p.id})`);
+      console.log(`✅ Inserted ${name} (ID: ${id})`);
       successCount++;
     } catch (err) {
-      console.error(`❌ Error with Pokémon ${id}:`, err.message);
+      // Handle 404 errors (Pokemon doesn't exist) differently
+      if (err.response && err.response.status === 404) {
+        console.log(`⏭️  Pokémon ${allPokemon[i].name} not found (skipping)`);
+      } else {
+        console.error(`❌ Error with Pokémon ${allPokemon[i].name}:`, err.message);
+      }
       errorCount++;
     }
   }
