@@ -39,7 +39,7 @@ app.get('/api/pokemon', async (req, res) => {
             search
         } = req.query;
 
-        let query = 'SELECT * FROM pokemon WHERE 1=1';
+        let query = 'SELECT name,id,type1,type2,species_url FROM pokemon WHERE 1=1';
         const params = [];
 
         // Filtering opties
