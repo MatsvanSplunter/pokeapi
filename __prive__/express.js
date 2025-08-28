@@ -91,7 +91,7 @@ app.get('/api/pokemon', async (req, res) => {
         res.json({
             success: true,
             count: rows.length,
-            data: rows
+            results: rows
         });
     } catch (error) {
         console.error('Error fetching pokemon:', error);
