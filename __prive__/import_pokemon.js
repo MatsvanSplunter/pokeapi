@@ -77,8 +77,8 @@ async function main() {
   let successCount = 0;
   let errorCount = 0;
 
-  // Import alle Pokemon inclusief varianten (start vanaf index 1025 voor nieuwe varianten)
-  for (let i = 1025; i < totalCount; i++) {
+  // Import alle Pokemon inclusief varianten (vanaf index 0 voor alle Pokemon)
+  for (let i = 0; i < totalCount; i++) {
     try {
       const pokemonUrl = allPokemon[i].url;
       const id = parseInt(pokemonUrl.split("/").slice(-2, -1)[0]);
