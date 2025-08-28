@@ -31,7 +31,7 @@ async function updateDatabase() {
 
         await db.query(`
             CREATE TABLE pokemon (
-                pokedex_number INT NOT NULL PRIMARY KEY,   -- National Dex number (id from PokeAPI)
+                id INT NOT NULL,   -- National Dex number (id from PokeAPI)
                 name VARCHAR(100) NOT NULL,                -- English name
                 japanese_name VARCHAR(100),                -- Japanese name
                 percentage_male DECIMAL(5,2),              -- e.g. 50.00 (NULL if genderless)
