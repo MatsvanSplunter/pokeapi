@@ -67,7 +67,7 @@ app.get('/api/pokemon', async (req, res) => {
         const limitInt = Math.max(1, Math.min(2000, parseInt(limit) || 1500));
         const offsetInt = Math.max(0, parseInt(offset) || 0);
 
-        query += ` ORDER BY pokedex_number LIMIT ${limitInt} OFFSET ${offsetInt}`;
+        query += ` ORDER BY id LIMIT ${limitInt} OFFSET ${offsetInt}`;
 
         let rows;
         if (params.length > 0) {
@@ -88,13 +88,13 @@ app.get('/api/pokemon', async (req, res) => {
             message: 'Error fetching pokemon datas 234'
         });
     }
-});// GET /api/pokemon/:id - Specifieke Pokémon ophalen
+});// GET /api/pokemon/:id - Specifieke Pokémon ophalen (PokeAPI compatible)
 app.get('/api/pokemon/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
         const [rows] = await pool.execute(
-            'SELECT * FROM pokemon WHERE pokedex_number = ?',
+            'SELECT * FROM pokemon WHERE id = ?',
             [id]
         );
 
@@ -105,15 +105,84 @@ app.get('/api/pokemon/:id', async (req, res) => {
             });
         }
 
+        const pokemon = rows[0];
+
+        // Transform data to be more PokeAPI-like
+        const result = {
+            id: pokemon.id,
+            name: pokemon.name,
+            base_experience: pokemon.base_experience,
+            height: pokemon.height,
+            weight: pokemon.weight,
+            order: pokemon.order_number,
+            is_default: true,
+            abilities: pokemon.abilities ? JSON.parse(pokemon.abilities) : [],
+            types: [
+                { slot: 1, type: { name: pokemon.type1 } },
+                ...(pokemon.type2 ? [{ slot: 2, type: { name: pokemon.type2 } }] : [])
+            ],
+            stats: [
+                { base_stat: pokemon.hp, stat: { name: "hp" } },
+                { base_stat: pokemon.attack, stat: { name: "attack" } },
+                { base_stat: pokemon.defense, stat: { name: "defense" } },
+                { base_stat: pokemon.sp_attack, stat: { name: "special-attack" } },
+                { base_stat: pokemon.sp_defense, stat: { name: "special-defense" } },
+                { base_stat: pokemon.speed, stat: { name: "speed" } }
+            ],
+            sprites: {
+                front_default: pokemon.sprite_front_default,
+                back_default: pokemon.sprite_back_default,
+                front_shiny: pokemon.sprite_front_shiny,
+                back_shiny: pokemon.sprite_back_shiny,
+                other: {
+                    "official-artwork": {
+                        front_default: pokemon.sprite_official_artwork
+                    }
+                }
+            },
+            species: {
+                name: pokemon.name
+            },
+            // Additional custom fields
+            japanese_name: pokemon.japanese_name,
+            classification: pokemon.classification,
+            percentage_male: pokemon.percentage_male,
+            capture_rate: pokemon.capture_rate,
+            base_happiness: pokemon.base_happiness,
+            experience_growth: pokemon.experience_growth,
+            generation: pokemon.generation,
+            is_legendary: pokemon.is_legendary,
+            type_effectiveness: {
+                against_normal: pokemon.against_normal,
+                against_fire: pokemon.against_fire,
+                against_water: pokemon.against_water,
+                against_electric: pokemon.against_electric,
+                against_grass: pokemon.against_grass,
+                against_ice: pokemon.against_ice,
+                against_fighting: pokemon.against_fighting,
+                against_poison: pokemon.against_poison,
+                against_ground: pokemon.against_ground,
+                against_flying: pokemon.against_flying,
+                against_psychic: pokemon.against_psychic,
+                against_bug: pokemon.against_bug,
+                against_rock: pokemon.against_rock,
+                against_ghost: pokemon.against_ghost,
+                against_dragon: pokemon.against_dragon,
+                against_dark: pokemon.against_dark,
+                against_steel: pokemon.against_steel,
+                against_fairy: pokemon.against_fairy
+            }
+        };
+
         res.json({
             success: true,
-            data: rows[0]
+            data: result
         });
     } catch (error) {
         console.error('Error fetching pokemon:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching pokemon datas'
+            message: 'Error fetching pokemon data'
         });
     }
 });
@@ -226,7 +295,7 @@ app.get('/api/pokemon/type/:type', async (req, res) => {
         const offsetInt = Math.max(0, parseInt(offset) || 0);
 
         const [rows] = await pool.execute(
-            `SELECT * FROM pokemon WHERE type1 = ? OR type2 = ? ORDER BY pokedex_number LIMIT ${limitInt} OFFSET ${offsetInt}`,
+            `SELECT * FROM pokemon WHERE type1 = ? OR type2 = ? ORDER BY id LIMIT ${limitInt} OFFSET ${offsetInt}`,
             [type, type]
         );
 

@@ -84,8 +84,13 @@ async function main() {
       const name = p.name;
       const japaneseName = s.names.find(n => n.language.name === "ja")?.name || null;
 
-      // Abilities
-      const abilities = JSON.stringify(p.abilities.map(a => a.ability.name));
+      // Abilities - better structure
+      const abilitiesArray = p.abilities.map(ability => ({
+        name: ability.ability.name,
+        is_hidden: ability.is_hidden,
+        slot: ability.slot
+      }));
+      const abilities = JSON.stringify(abilitiesArray);
 
       // Types
       const type1 = p.types[0]?.type.name || null;
@@ -99,19 +104,30 @@ async function main() {
       const spDefense = p.stats.find(st => st.stat.name === "special-defense").base_stat;
       const speed     = p.stats.find(st => st.stat.name === "speed").base_stat;
 
+      // Sprites
+      const sprites = {
+        front_default: p.sprites.front_default,
+        back_default: p.sprites.back_default,
+        front_shiny: p.sprites.front_shiny,
+        back_shiny: p.sprites.back_shiny,
+        official_artwork: p.sprites.other?.['official-artwork']?.front_default || null
+      };
+
       // Type effectiveness
       const multipliers = calculateTypeEffectiveness([type1, type2].filter(Boolean));
 
-      // INSERT
+      // INSERT - Updated with new fields
       await db.query(`
         INSERT INTO pokemon (
-          name, japanese_name, pokedex_number, percentage_male,
-          type1, type2, classification, height_m, weight_kg,
-          capture_rate, base_egg_steps, abilities, experience_growth, base_happiness,
+          name, japanese_name, id, percentage_male,
+          type1, type2, classification, height, weight, base_experience,
+          capture_rate, base_egg_steps, abilities, experience_growth, base_happiness, order_number,
+          sprite_front_default, sprite_back_default, sprite_front_shiny, sprite_back_shiny, sprite_official_artwork,
           against_normal, against_fire, against_water, against_electric, against_grass, against_ice, against_fighting, against_poison, against_ground, against_flying, against_psychic, against_bug, against_rock, against_ghost, against_dragon, against_dark, against_steel, against_fairy,
           hp, attack, defense, sp_attack, sp_defense, speed,
           generation, is_legendary
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
@@ -122,13 +138,20 @@ async function main() {
         type1,
         type2,
         s.genera.find(g => g.language.name === "en")?.genus || null,
-        p.height / 10,
-        p.weight / 10,
+        p.height,                                // Keep PokeAPI format (decimeters)
+        p.weight,                                // Keep PokeAPI format (hectograms)
+        p.base_experience,                       // New field
         s.capture_rate,
         s.hatch_counter ? (s.hatch_counter * 255) : null,
         abilities,
-        p.growth_rate,
+        s.growth_rate?.name || null,             // Fixed: get name from growth_rate
         s.base_happiness,
+        p.order,                                 // New field: order
+        sprites.front_default,                   // New field
+        sprites.back_default,                    // New field
+        sprites.front_shiny,                     // New field
+        sprites.back_shiny,                      // New field
+        sprites.official_artwork,                // New field
         multipliers.against_normal, multipliers.against_fire, multipliers.against_water, multipliers.against_electric, multipliers.against_grass, multipliers.against_ice, multipliers.against_fighting, multipliers.against_poison, multipliers.against_ground, multipliers.against_flying, multipliers.against_psychic, multipliers.against_bug, multipliers.against_rock, multipliers.against_ghost, multipliers.against_dragon, multipliers.against_dark, multipliers.against_steel, multipliers.against_fairy,
         hp, attack, defense, spAttack, spDefense, speed,
         parseInt(s.generation.url.split("/").slice(-2, -1)[0]),
