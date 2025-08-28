@@ -25,6 +25,18 @@ const dbConfig = {
 // Database connection pool
 const pool = mysql.createPool(dbConfig);
 
+// Helper function to get type ID for PokeAPI compatibility
+function getTypeId(typeName) {
+    const typeIds = {
+        'normal': 1, 'fighting': 2, 'flying': 3, 'poison': 4,
+        'ground': 5, 'rock': 6, 'bug': 7, 'ghost': 8,
+        'steel': 9, 'fire': 10, 'water': 11, 'grass': 12,
+        'electric': 13, 'psychic': 14, 'ice': 15, 'dragon': 16,
+        'dark': 17, 'fairy': 18
+    };
+    return typeIds[typeName] || 1;
+}
+
 // Routes
 
 // GET /api/pokemon - Alle Pokémon ophalen met optionele filtering
@@ -118,8 +130,8 @@ app.get('/api/pokemon/:id', async (req, res) => {
             is_default: true,
             abilities: pokemon.abilities ? JSON.parse(pokemon.abilities) : [],
             types: [
-                { slot: 1, type: { name: pokemon.type1 } },
-                ...(pokemon.type2 ? [{ slot: 2, type: { name: pokemon.type2 } }] : [])
+                { slot: 1, type: { name: pokemon.type1, url: `https://pokeapi.co/api/v2/type/${getTypeId(pokemon.type1)}/` } },
+                ...(pokemon.type2 ? [{ slot: 2, type: { name: pokemon.type2, url: `https://pokeapi.co/api/v2/type/${getTypeId(pokemon.type2)}/` } }] : [])
             ],
             stats: [
                 { base_stat: pokemon.hp, stat: { name: "hp" } },
@@ -141,7 +153,8 @@ app.get('/api/pokemon/:id', async (req, res) => {
                 }
             },
             species: {
-                name: pokemon.name
+                name: pokemon.species_name,
+                url: pokemon.species_url || `https://pokeapi.co/api/v2/pokemon-species/${pokemon.id}/`
             },
             // Additional custom fields
             japanese_name: pokemon.japanese_name,
