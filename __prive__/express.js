@@ -91,7 +91,10 @@ app.get('/api/pokemon', async (req, res) => {
         res.json({
             success: true,
             count: rows.length,
-            results: rows
+            results: rows.map((row) => ({
+                url: `${req.host}/pokemon/${row.id}/`,
+                ...row
+            }))
         });
     } catch (error) {
         console.error('Error fetching pokemon:', error);
