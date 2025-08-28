@@ -51,7 +51,7 @@ app.get('/api/pokemon', async (req, res) => {
             search
         } = req.query;
 
-        let query = 'SELECT name,id,type1,type2,species_url FROM pokemon WHERE 1=1';
+        let query = 'SELECT name,id,type1,type2,sprite_official_artwork FROM pokemon WHERE 1=1';
         const params = [];
 
         // Filtering opties
@@ -148,13 +148,13 @@ app.get('/api/pokemon/:id', async (req, res) => {
                 back_shiny: pokemon.sprite_back_shiny,
                 other: {
                     "official-artwork": {
-                        front_default: pokemon.sprite_official_artwork
+                        url: pokemon.sprite_official_artwork
                     }
                 }
             },
             species: {
                 name: pokemon.species_name,
-                url: pokemon.species_url || `https://pokeapi.co/api/v2/pokemon-species/${pokemon.id}/`
+                species_url: pokemon.species_url
             },
             // Additional custom fields
             japanese_name: pokemon.japanese_name,

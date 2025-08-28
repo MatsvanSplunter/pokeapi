@@ -211,7 +211,7 @@ async function main() {
         parseInt(s.generation.url.split("/").slice(-2, -1)[0]), // generation
         s.is_legendary,                         // is_legendary
         s.name,                                 // species_name
-        s.url                                   // species_url
+        `https://pokeapi.co/api/v2/pokemon-species/${id}/`      // species_url
       ]);
 
       console.log(`✅ Inserted ${name} (ID: ${p.id})`);
