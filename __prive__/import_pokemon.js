@@ -69,10 +69,18 @@ async function main() {
   const totalPokemonRes = await axios.get('https://pokeapi.co/api/v2/pokemon-species/?limit=1');
   const totalCount = totalPokemonRes.data.count;
 
-  console.log(`Found ${totalCount} Pokémon. Starting import...`);
+  console.log(`Found ${totalCount} Pokémon. Starting FULL IMPORT of ALL Pokémon...`);
+  console.log(`🚀 This will take a while - importing ${totalCount} Pokémon from PokeAPI`);
+
+  let successCount = 0;
+  let errorCount = 0;
 
   for (let id = 1; id <= totalCount; id++) {
     try {
+      // Progress indicator every 50 Pokémon
+      if (id % 50 === 0 || id === 1) {
+        console.log(`📊 Progress: ${id}/${totalCount} (${Math.round(id / totalCount * 100)}%)`);
+      }
       // Basis Pokémon data
       const pokeRes = await axios.get(`https://pokeapi.co/api/v2/pokemon/${id}`);
       const p = pokeRes.data;
@@ -130,7 +138,7 @@ async function main() {
 
       // INSERT - Complete with all PokeAPI fields matching the actual database schema
       await db.query(`
-        INSERT INTO pokemon (
+        INSERT IGNORE INTO pokemon (
           id, name, japanese_name, percentage_male,
           type1, type2, classification, height, weight, base_experience,
           capture_rate, base_egg_steps, base_happiness, experience_growth, order_number, is_default,
@@ -148,7 +156,7 @@ async function main() {
                   ?, ?, ?, ?, ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         p.id,                                    // id (exact PokeAPI ID)
         name,                                    // name
@@ -207,12 +215,19 @@ async function main() {
       ]);
 
       console.log(`✅ Inserted ${name} (ID: ${p.id})`);
+      successCount++;
     } catch (err) {
       console.error(`❌ Error with Pokémon ${id}:`, err.message);
+      errorCount++;
     }
   }
 
-  console.log("🎉 Import finished!");
+  console.log("\n🎉 Import finished!");
+  console.log(`📊 Final Statistics:`);
+  console.log(`   ✅ Successfully imported: ${successCount} Pokémon`);
+  console.log(`   ❌ Errors: ${errorCount} Pokémon`);
+  console.log(`   📈 Success rate: ${Math.round(successCount / (successCount + errorCount) * 100)}%`);
+  console.log(`🌟 Your PokeAPI database is now complete!`);
   await db.end();
 }
 
