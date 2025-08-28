@@ -92,7 +92,7 @@ app.get('/api/pokemon', async (req, res) => {
             success: true,
             count: rows.length,
             results: rows.map((row) => ({
-                url: `${req.host}/api/pokemon/${row.id}/`,
+                url: `https://${req.host}/api/pokemon/${row.id}/`,
                 ...row
             }))
         });
