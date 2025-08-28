@@ -5,7 +5,7 @@ USE default;
 DROP TABLE IF EXISTS pokemon;
 
 CREATE TABLE pokemon (
-id INT NOT NULL PRIMARY KEY,
+id INT NOT NULL,
 -- National Dex number (id from PokeAPI)
 name VARCHAR(100) NOT NULL,
 -- English name
