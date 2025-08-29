@@ -236,7 +236,7 @@ app.get('/api/pokemon/:id', async (req, res) => {
 
         res.json({
             success: true,
-            data: result
+            ...result
         });
     } catch (error) {
         console.error('Error fetching pokemon:', error);
